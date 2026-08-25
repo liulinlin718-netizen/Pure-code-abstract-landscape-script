@@ -1,0 +1,18 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local inputs, generated artwork, and regression assets.
+deconstruction-output/
+landscape-generalization-*/
+minimal-landscape-testset-*/
+testabstract/
+refactor-skill-to-code/
+
+# Editor and test caches.
+.idea/
+.vscode/
+.pytest_cache/
+.mypy_cache/

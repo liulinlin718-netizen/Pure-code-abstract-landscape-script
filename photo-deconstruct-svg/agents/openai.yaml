@@ -1,0 +1,4 @@
+interface:
+  display_name: "Photo Deconstruct SVG"
+  short_description: "Turn photos into sparse paper-textured SVG art"
+  default_prompt: "Use $photo-deconstruct-svg to turn this photo into a minimal source-colored SVG abstraction with subtle paper grain."
