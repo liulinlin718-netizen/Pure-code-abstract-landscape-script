@@ -2,6 +2,8 @@
 
 用纯 Python 图像分析把照片转换为极简、纸张质感的抽象风景 SVG。整个流程可离线运行，不调用生图模型，不使用风格迁移，不通过 Canvas 绘制，也不会把原始照片嵌入 SVG。
 
+仓库范围：这里只发布 `photo-deconstruct-svg` 图片解构 Skill、它的运行依赖以及对应测试文档；同级工作区中的其他独立 Skill 不属于本项目。
+
 ## 特性
 
 - 从原图提取主色、空间层级、主体轮廓和轻度渐变。
@@ -93,6 +95,27 @@ python3 photo-deconstruct-svg/scripts/deconstruct_photo.py --help
 ## 项目结构
 
 ```text
+.
+├── README.md
+├── requirements.txt
+├── photo-deconstruct-svg/
+│   ├── SKILL.md
+│   ├── agents/
+│   ├── references/
+│   └── scripts/
+└── tests/
+    ├── README.md
+    └── photo-deconstruct-svg/
+        ├── datasets/
+        │   ├── landscape-generalization-20/
+        │   ├── minimal-landscape-10/
+        │   └── testabstract-10/
+        └── results/
+```
+
+核心程序目录：
+
+```text
 photo-deconstruct-svg/
 ├── SKILL.md
 ├── agents/
@@ -105,11 +128,11 @@ photo-deconstruct-svg/
     └── validate_svg.py
 ```
 
-`SKILL.md` 记录完整工作流和验收契约；`references/` 记录颜色与视觉简化原则。核心运行逻辑位于 `scripts/deconstruct_photo.py`。
+`photo-deconstruct-svg/SKILL.md` 记录图片工作流和验收契约；其 `references/` 记录颜色与视觉简化原则。核心运行逻辑位于 `photo-deconstruct-svg/scripts/deconstruct_photo.py`。三套图片测试原图统一放在 `tests/photo-deconstruct-svg/datasets/`，对应的程序输出、对比图和历史实验统一放在 `tests/photo-deconstruct-svg/results/`；详细索引见 `tests/README.md`。
 
 ## 输入与隐私
 
-支持 JPG、PNG 和 WebP。程序本身不发起网络请求，所有分析和 SVG 生成均在本地完成。仓库不包含测试过程中使用的第三方照片。
+支持 JPG、PNG 和 WebP。程序本身不发起网络请求，所有分析和 SVG 生成均在本地完成。测试原图和生成结果保存在本地测试目录中，但因授权和体积原因由 `.gitignore` 排除；仓库只跟踪来源、校验值、报告和目录说明。
 
 ## 设计边界
 
