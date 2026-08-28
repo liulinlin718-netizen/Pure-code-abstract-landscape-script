@@ -1,0 +1,7 @@
+include README.md
+include requirements.txt
+include pyproject.toml
+include setup.cfg
+include setup.py
+recursive-include photo-deconstruct-svg *.md *.py *.yaml
+prune photo-deconstruct-svg/scripts/__pycache__

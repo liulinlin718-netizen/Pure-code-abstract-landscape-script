@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+build/
+dist/
+*.egg-info/
 
 # Local test images and generated artwork. Keep manifests and indexes tracked.
 tests/photo-deconstruct-svg/datasets/*/images/
@@ -10,6 +13,7 @@ tests/photo-deconstruct-svg/datasets/*/source-contact-sheet.jpg
 tests/photo-deconstruct-svg/results/**
 !tests/photo-deconstruct-svg/results/**/
 !tests/photo-deconstruct-svg/results/**/*.md
+tests/photo-deconstruct-svg/social-media-review/
 
 # A separate independent local Skill package; it is not part of the photo Skill repo.
 refactor-skill-to-code/

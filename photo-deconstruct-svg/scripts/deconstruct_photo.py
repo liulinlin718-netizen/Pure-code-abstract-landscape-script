@@ -2409,6 +2409,63 @@ def low_pass_closed(
     return [(float(point[0]), float(point[1])) for point in array]
 
 
+def suppress_micro_contour_roughness(
+    points: list[tuple[float, float]],
+    curve_smoothing: float,
+    passes: int = 2,
+) -> list[tuple[float, float]]:
+    """Remove only short, shallow contour fluctuations.
+
+    The segmentation mask lives on a much smaller pixel grid than the final
+    SVG. A two- or three-pixel label fluctuation can therefore become a visible
+    notch after scaling. Ordinary low-pass smoothing softens that notch but can
+    also round a real peak. This filter compares narrow and broad closed-curve
+    estimates: it moves a point only when the difference has micro-scale energy
+    and the required displacement remains small. Large turns pass through
+    unchanged.
+    """
+    if len(points) < 12:
+        return points
+    array = np.asarray(points, dtype=np.float64)
+    narrow_weights = np.asarray((1.0, 4.0, 6.0, 4.0, 1.0)) / 16.0
+    broad_weights = np.asarray(
+        (1.0, 8.0, 28.0, 56.0, 70.0, 56.0, 28.0, 8.0, 1.0)
+    ) / 256.0
+    minimum_band_energy = 0.16
+    maximum_displacement = 3.95 + 1.15 * curve_smoothing
+    blend = 0.76 + 0.12 * curve_smoothing
+
+    def closed_filter(values: np.ndarray, weights: np.ndarray) -> np.ndarray:
+        radius = len(weights) // 2
+        filtered = np.zeros_like(values)
+        for offset, weight in enumerate(weights):
+            filtered += np.roll(values, radius - offset, axis=0) * weight
+        return filtered
+
+    for _ in range(max(1, passes)):
+        narrow = closed_filter(array, narrow_weights)
+        broad = closed_filter(array, broad_weights)
+        band_energy = np.linalg.norm(narrow - broad, axis=1)
+        displacement = np.linalg.norm(broad - array, axis=1)
+
+        # The lower gate leaves straight runs and already-smooth curves alone.
+        # The upper gate locks meaningful peaks whose removal would require a
+        # larger move than a micro contour artifact.
+        lower_gate = np.clip(
+            (band_energy - minimum_band_energy) / 0.42,
+            0.0,
+            1.0,
+        )
+        upper_gate = np.clip(
+            (maximum_displacement - displacement) / 0.85,
+            0.0,
+            1.0,
+        )
+        blend_weights = (blend * lower_gate * upper_gate)[:, None]
+        array = array + (broad - array) * blend_weights
+    return [(float(point[0]), float(point[1])) for point in array]
+
+
 def smooth_path(
     points: list[tuple[float, float]],
     scale_x: float,
@@ -2417,6 +2474,7 @@ def smooth_path(
     point_budget: int | None = None,
     curve_mode: str = "adaptive",
     smoothing_passes: int = 2,
+    micro_contour_filter: bool = False,
 ) -> str:
     """Create a closed cubic Bézier contour with adaptive long handles."""
     if len(points) < 3:
@@ -2429,6 +2487,12 @@ def smooth_path(
         maximum_points = min(maximum_points, max(12, point_budget))
     point_count = max(12, min(maximum_points, round(perimeter / spacing)))
     uniform = resample_closed(points, point_count)
+    if micro_contour_filter:
+        uniform = suppress_micro_contour_roughness(
+            uniform,
+            curve_smoothing,
+            passes=2,
+        )
     rounded = low_pass_closed(uniform, curve_smoothing, passes=smoothing_passes)
     scaled = np.asarray([(x * scale_x, y * scale_y) for x, y in rounded], dtype=np.float64)
 
@@ -2596,6 +2660,7 @@ def pixels_svg_path(
     smoothing_passes: int = 2,
     frame_bleed: int | None = None,
     spread_frame_contacts: bool = True,
+    micro_contour_filter: bool = False,
 ) -> str:
     scale_x = output_width / analysis_width
     scale_y = output_height / analysis_height
@@ -2622,6 +2687,7 @@ def pixels_svg_path(
             point_budget=point_budget,
             curve_mode=curve_mode,
             smoothing_passes=smoothing_passes,
+            micro_contour_filter=micro_contour_filter,
         )
         if path:
             parts.append(path)
@@ -4154,6 +4220,7 @@ def main() -> int:
                     else general_frame_bleed_analysis_pixels
                 ),
                 spread_frame_contacts=region.label not in perspective_line_role_labels,
+                micro_contour_filter=region.label not in protected_source_role_labels,
             )
             for region, render_mask in zip(regions, render_masks)
         ]
@@ -4184,6 +4251,8 @@ def main() -> int:
             "archetype": "general-color-fields",
             "general_contour_policy": "four-pass closed-loop low-pass before cubic Bezier fitting",
             "general_contour_low_passes": 4,
+            "general_micro_contour_policy": "scale-limited narrow-versus-broad contour filtering on ordinary fields only",
+            "general_micro_contour_filter_passes": 2,
             "general_compact_contour_policy": "two-pass identity lock for protected compact roles",
             "general_compact_contour_low_passes": 2,
             "general_frame_boundary_policy": "extend touching paths beyond the clipped viewBox",

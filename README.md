@@ -34,6 +34,16 @@ Windows PowerShell 激活虚拟环境：
 .venv\Scripts\Activate.ps1
 ```
 
+也可以安装打包好的 wheel，安装后直接使用两个命令行入口：
+
+```bash
+python3 -m pip install dist/photo_deconstruct_svg-0.1.0-py3-none-any.whl
+photo-deconstruct-svg input.jpg output.svg
+photo-deconstruct-validate output.svg --analysis output.json
+```
+
+运行 `python3 tools/build_release.py` 可重新生成 wheel、源码包和独立 Skill ZIP；详细说明见 `photo-deconstruct-svg/PACKAGE.md`。
+
 ## 快速使用
 
 默认运行：
